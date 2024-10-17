@@ -5,6 +5,7 @@ public class SimpleMinecraftConstantes {
     public static final float Z_NEAR = 0.01f;
     public static final float Z_FAR = 1000.0f;
     public static final String TEXTURE_PATH = "src/main/resources/textures/";
+    public static final String SHADER_PATH = "src/main/resources/shaders/";
 
     public static final float[] VERTICES_CUBE = {
             // Positions          // Texture Coords

@@ -1,7 +1,12 @@
 package entities;
 
+import exceptions.shaders.ShadersCompilationException;
+import exceptions.shaders.ShadersCreationException;
 import exceptions.WindowsCreationException;
 import exceptions.WindowsInitializationException;
+import exceptions.shaders.ShadersLinkingException;
+import exceptions.shaders.ShadersValidatingException;
+import helper.ShaderProgram;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,6 +20,7 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -37,9 +43,12 @@ public class Window {
     private long window;
 
     private final Matrix4f projectionMatrix;
+    private final Matrix4f viewMatrix;
 
     // Map pour stocker les textures chargées
     private Map<String, Integer> textureMap = new LinkedHashMap<>();
+
+    private ShaderProgram shaderProgram;
 
     public Window(int width, int height, String title, boolean vSync, boolean resiezeable) {
         this.width = width;
@@ -49,6 +58,7 @@ public class Window {
         this.resizable = resiezeable;
 
         this.projectionMatrix = new Matrix4f();
+        this.viewMatrix = new Matrix4f();
     }
 
     public Window(int width, int height, String title, boolean vSync) {
@@ -58,6 +68,7 @@ public class Window {
         this.vSync = vSync;
 
         this.projectionMatrix = new Matrix4f();
+        this.viewMatrix = new Matrix4f();
     }
 
     /**
@@ -66,7 +77,7 @@ public class Window {
      * @throws WindowsInitializationException Si une erreur est survenue lors de l'initialisation de LWJGL
      * @throws WindowsCreationException       Si une erreur est survenue lors de la création de la fenêtre
      */
-    public void create() throws WindowsInitializationException, WindowsCreationException {
+    public void create() throws WindowsInitializationException, WindowsCreationException, ShadersCreationException, ShadersLinkingException, ShadersValidatingException, ShadersCompilationException {
         GLFWErrorCallback.createPrint(System.err).set();
 
         if (!GLFW.glfwInit()) {
@@ -107,6 +118,7 @@ public class Window {
 
         GLFW.glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
             if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_RELEASE) {
+                log.info("Fermeture de la fenêtre");
                 GLFW.glfwSetWindowShouldClose(window, true);
             }
         });
@@ -139,6 +151,23 @@ public class Window {
         glEnable(GL_STENCIL_TEST);
         glEnable(GL_CULL_FACE);
         glEnable(GL_BACK);
+
+        // Initialize shader program
+        try {
+            shaderProgram = new ShaderProgram(SHADER_PATH + "vertex.glsl", SHADER_PATH + "fragment.glsl");
+        } catch (IOException e) {
+            log.error("Erreur lors du chargement des shaders", e);
+            throw new ShadersCreationException();
+        } catch (ShadersValidatingException e) {
+            log.error("Erreur lors de la validation des shaders", e);
+            throw e;
+        } catch (ShadersLinkingException e) {
+            log.error("Erreur lors de la liaison des shaders", e);
+            throw e;
+        } catch (ShadersCompilationException e) {
+            log.error("Erreur lors de la compilation des shaders", e);
+            throw e;
+        }
     }
 
     /**
@@ -162,6 +191,7 @@ public class Window {
      * Fonction qui permet de nettoyer les ressources
      */
     public void cleanup() {
+        shaderProgram.cleanup();
         GLFW.glfwDestroyWindow(window);
         GLFW.glfwTerminate();
     }
@@ -236,11 +266,23 @@ public class Window {
         return projectionMatrix;
     }
 
+    public Matrix4f getViewMatrix() {
+        return viewMatrix;
+    }
+
     public Map<String, Integer> getTextureMap() {
         return textureMap;
     }
 
     public void setTextureMap(Map<String, Integer> textureMap) {
         this.textureMap = textureMap;
+    }
+
+    public ShaderProgram getShaderProgram() {
+        return shaderProgram;
+    }
+
+    public void setViewMatrix(Matrix4f viewMatrix) {
+        this.viewMatrix.set(viewMatrix);
     }
 }

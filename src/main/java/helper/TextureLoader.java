@@ -3,6 +3,7 @@ package helper;
 import lombok.extern.log4j.Log4j2;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
 import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryStack;
 
@@ -24,7 +25,6 @@ public class TextureLoader {
      */
     public static int loadTexture(String filePath) {
         // Vérification du contexte GLFW
-        long context = GLFW.glfwGetCurrentContext();
         if (GLFW.glfwGetCurrentContext() == 0) {
             log.error("Le contexte GLFW n'est pas chargé.");
             throw new IllegalStateException("Le contexte GLFW n'est pas chargé.");
@@ -54,16 +54,16 @@ public class TextureLoader {
                 throw new RuntimeException("Erreur lors de la création de la texture", e);
             }
 
-            glBindTexture(GL_TEXTURE_2D, textureId);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w.get(), h.get(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
-            glGenerateMipmap(GL_TEXTURE_2D);
+            glBindTexture(GL12.GL_TEXTURE_3D, textureId);
+            glTexImage2D(GL12.GL_TEXTURE_3D, 0, GL_RGBA, w.get(), h.get(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+            glGenerateMipmap(GL12.GL_TEXTURE_3D);
 
             STBImage.stbi_image_free(image); // Libérez l'image une fois qu'elle a été chargée
         }
 
         // Configurez les paramètres de la texture
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL12.GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL12.GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         return textureId; // Retourne l'ID de la texture
     }

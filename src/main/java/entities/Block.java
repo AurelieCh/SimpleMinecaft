@@ -6,14 +6,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
-import org.lwjgl.glfw.GLFW;
+import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL30;
 
 import static constants.SimpleMinecraftConstantes.TEXTURE_PATH;
 import static constants.SimpleMinecraftConstantes.VERTICES_CUBE;
 import static helper.Utils.checkContext;
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengles.GLES30.GL_TEXTURE_3D;
 
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
@@ -27,7 +28,6 @@ public class Block {
     private final boolean solid;
     private final boolean breakable;
     private int textureId;
-
     private int vbo;
     private int vao;
 
@@ -38,50 +38,59 @@ public class Block {
         this.texture = texture;
         this.breakable = breakable;
 
-
         loadTexture();
     }
 
     public void loadTexture() {
         textureId = TextureLoader.loadTexture(TEXTURE_PATH + texture);
 
-        vao = glGenVertexArrays();
-        vbo = glGenBuffers();
+        vao = GL30.glGenVertexArrays();
+        vbo = GL15.glGenBuffers();
 
-        glBindVertexArray(vao);
+        GL30.glBindVertexArray(vao);
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, VERTICES_CUBE, GL_STATIC_DRAW);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, VERTICES_CUBE, GL15.GL_STATIC_DRAW);
 
         // Position attribute
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 5 * Float.BYTES, 0);
-        glEnableVertexAttribArray(0);
+        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 5 * Float.BYTES, 0);
+        GL20.glEnableVertexAttribArray(0);
 
         // Texture Coordinate attribute
-        glVertexAttribPointer(1, 2, GL_FLOAT, false, 5 * Float.BYTES, 3 * Float.BYTES);
-        glEnableVertexAttribArray(1);
+        GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 5 * Float.BYTES, 3 * Float.BYTES);
+        GL20.glEnableVertexAttribArray(1);
     }
 
-
-    public void render() {
+    public void render(Window window) {
         // Vérification du contexte GLFW
         checkContext();
 
+        // Use the shader program
+        window.getShaderProgram().start();
+
+        // Set the uniforms for the shader
+        window.getShaderProgram().setUniformMatrix4f("model", new Matrix4f());
+        window.getShaderProgram().setUniformMatrix4f("view", window.getViewMatrix());
+        window.getShaderProgram().setUniformMatrix4f("projection", window.getProjectionMatrix());
+
         // Bind the block's texture
-        glBindTexture(GL_TEXTURE_2D, textureId);
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureId);
 
         // Bind the VAO
-        glBindVertexArray(vao);
+        GL30.glBindVertexArray(vao);
 
         // Draw the cube
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, 36);
 
         // Unbind the VAO
-        glBindVertexArray(0);
+        GL30.glBindVertexArray(0);
+
+        // Stop using the shader program
+        window.getShaderProgram().stop();
     }
 
     public void cleanup() {
-        glDeleteVertexArrays(vao);
-        glDeleteBuffers(vbo);
+        GL15.glDeleteBuffers(vbo);
+        GL30.glDeleteVertexArrays(vao);
     }
 }
